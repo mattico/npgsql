@@ -16,6 +16,29 @@ namespace Npgsql.Tests.Types;
 /// </remarks>
 class RangeTests : MultiplexingTestBase
 {
+    #region Issues
+
+    [Test]
+    [IssueLink("https://github.com/npgsql/npgsql/issues/1943")]
+    public void Roundtrip_canonicalization_causes_issues()
+    {
+        var testValue = new NpgsqlRange<int>(0, 1);
+        using (var conn = OpenConnection(ConnectionString))
+        {
+            using (var cmd = new NpgsqlCommand("SELECT @p", conn))
+            {
+                cmd.Parameters.AddWithValue("p", NpgsqlDbType.Range | NpgsqlDbType.Integer, testValue);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    reader.Read();
+                    Assert.AreNotEqual(testValue, reader.GetValue(0));
+                }
+            }
+        }
+    }
+
+    #endregion
+
     [Test, NUnit.Framework.Description("Resolves a range type handler via the different pathways")]
     public async Task Range_resolution()
     {
